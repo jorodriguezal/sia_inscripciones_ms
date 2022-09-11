@@ -8,9 +8,9 @@ from djongo import models
 class Horario(models.Model):
     # Día de la semana de la clase
     dia = models.SmallIntegerField(max_length=1)
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    salon = models.CharField(max_length=10)  # Salón de la clase
+    hora_inicio = models.SmallIntegerField()
+    hora_fin = models.SmallIntegerField()
+    salon = models.CharField(max_length=50)  # Salón de la clase
     documento_profesor = models.CharField(
         max_length=50)  # Profesor de la clase
     # Tipo de clase (lab, teoría, taller, virtual, etc.)

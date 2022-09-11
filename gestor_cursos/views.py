@@ -12,25 +12,36 @@ from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, 
 
 @csrf_exempt
 def cursoApi(request, id=0):
+
     if request.method == 'GET':
         cursos = Curso.objects.all()
         cursos_serializer = CursoSerializer(cursos, many=True)
         return JsonResponse(cursos_serializer.data, safe=False)
+
     elif request.method == 'POST':
         curso_data = JSONParser().parse(request)
+        # valida que el curso no exista
+        cursos_repetidos = Curso.objects.filter(
+            id_curso=curso_data['id_curso'])
+        if cursos_repetidos.count() > 0:
+            return JsonResponse("El curso ya existe", safe=False)
         curso_serializer = CursoSerializer(data=curso_data)
+
         if curso_serializer.is_valid():
             curso_serializer.save()
             return JsonResponse("Agregado Correctamente", safe=False)
         return JsonResponse("Fallo al agregar", safe=False)
+
     elif request.method == 'PUT':
         curso_data = JSONParser().parse(request)
         curso = Curso.objects.get(id_curso=curso_data['id_curso'])
         curso_serializer = CursoSerializer(curso, data=curso_data)
+
         if curso_serializer.is_valid():
             curso_serializer.save()
             return JsonResponse("Actualizado Correctamente", safe=False)
         return JsonResponse("Fallo al actualizar", safe=False)
+
     elif request.method == 'DELETE':
         curso = Curso.objects.get(id_curso=id)
         curso.delete()
@@ -39,29 +50,55 @@ def cursoApi(request, id=0):
 
 @csrf_exempt
 def cursoInscritoApi(request, id=0):
+
     if request.method == 'GET':
         cursos_inscritos = CursoInscrito.objects.all()
         cursos_inscritos_serializer = CursoInscritoSerializer(
             cursos_inscritos, many=True)
         return JsonResponse(cursos_inscritos_serializer.data, safe=False)
+
     elif request.method == 'POST':
         curso_inscrito_data = JSONParser().parse(request)
+        asignaturas_cursadas = curso_inscrito_data['asignaturas_cursadas']
+        # valida que no haya cursado la asignatura antes
+        for asignatura in asignaturas_cursadas:
+            cursos_repetidos = Curso.objects.filter(
+                codigo_asignatura=asignatura)
+            if cursos_repetidos.count() > 0:
+                return JsonResponse("El estudiante ya cursó la asignatura", safe=False)
+
+        # valida que el curso no esté inscrito por el mismo estudiante
+        cursos_inscritos_repetidos = CursoInscrito.objects.filter(
+            id_curso=curso_inscrito_data['id_curso'], documento_estudiante=curso_inscrito_data['documento_estudiante'])
+        if cursos_inscritos_repetidos.count() > 0:
+            return JsonResponse("El curso ya está inscrito por el estudiante", safe=False)
+
+        # Valida que el curso sea de una asignatura que el estudiante no haya ya inscrito
+        cursos_inscritos = CursoInscrito.objects.filter(
+            documento_estudiante=curso_inscrito_data['documento_estudiante'])
+        cursos = Curso.objects.filter(
+            id_curso__in=[curso_inscrito.id_curso for curso_inscrito in cursos_inscritos])
+
+        asignaturas_inscritas = [curso.codigo_asignatura for curso in cursos]
+        curso = Curso.objects.get(id_curso=curso_inscrito_data['id_curso'])
+        if curso.codigo_asignatura in asignaturas_inscritas:
+            return JsonResponse("El estudiante ya está inscrito en una asignatura con el mismo código", safe=False)
+
+        # Valida que el curso tenga cupos disponibles
+        if curso.cupos_disponibles <= 0:
+            return JsonResponse("El curso no tiene cupos disponibles", safe=False)
+
         curso_inscrito_serializer = CursoInscritoSerializer(
             data=curso_inscrito_data)
+
         if curso_inscrito_serializer.is_valid():
             curso_inscrito_serializer.save()
+            # Actualiza los cupos disponibles del curso
+            curso.cupos_disponibles -= 1
+            curso.save()
             return JsonResponse("Agregado Correctamente", safe=False)
         return JsonResponse("Fallo al agregar", safe=False)
-    elif request.method == 'PUT':
-        curso_inscrito_data = JSONParser().parse(request)
-        curso_inscrito = CursoInscrito.objects.get(
-            id_curso_inscrito=curso_inscrito_data['id_curso_inscrito'])
-        curso_inscrito_serializer = CursoInscritoSerializer(
-            curso_inscrito, data=curso_inscrito_data)
-        if curso_inscrito_serializer.is_valid():
-            curso_inscrito_serializer.save()
-            return JsonResponse("Actualizado Correctamente", safe=False)
-        return JsonResponse("Fallo al actualizar", safe=False)
+
     elif request.method == 'DELETE':
         curso_inscrito = CursoInscrito.objects.get(id_curso_inscrito=id)
         curso_inscrito.delete()
@@ -70,35 +107,44 @@ def cursoInscritoApi(request, id=0):
 
 @csrf_exempt
 def profesorApi(request, id=0):
+
     if request.method == 'GET':
         profesores = Profesor.objects.all()
         profesores_serializer = ProfesorSerializer(profesores, many=True)
         return JsonResponse(profesores_serializer.data, safe=False)
-    elif request.method == 'POST':
-        profesores = Profesor.objects.all()
-        profesor_data = JSONParser().parse(request)
-        profesor_serializer = ProfesorSerializer(data=profesor_data)
 
+    elif request.method == 'POST':
+        profesor_data = JSONParser().parse(request)
         # Valida que el profesor no exista
-        profesor_repetido = profesor_data['documento_identidad'] in [
-            profesor.documento_identidad for profesor in profesores]
-        if profesor_repetido == False and profesor_serializer.is_valid():
+        profesor_repetido = Profesor.objects.filter(
+            documento_identidad=profesor_data['documento_identidad'])
+        if profesor_repetido.count() > 0:
+            return JsonResponse("El profesor ya existe", safe=False)
+
+        profesor_serializer = ProfesorSerializer(data=profesor_data)
+        if profesor_serializer.is_valid():
             profesor_serializer.save()
             return JsonResponse("Agregado Correctamente", safe=False)
-        return JsonResponse("Fallo al agregar: Información inválida o profesor ya existente", safe=False, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse("Fallo al agregar", safe=False)
+
     elif request.method == 'PUT':
-        profesores = Profesor.objects.all()
         profesor_data = JSONParser().parse(request)
-        if profesor_data['documento_identidad'] not in [profesor.documento_identidad for profesor in profesores]:
-            return JsonResponse("El profesor no existe", safe=False, status=status.HTTP_404_NOT_FOUND)
+
+        # Valida que el profesor exista
+        profesor_repetido = Profesor.objects.filter(
+            documento_identidad=profesor_data['documento_identidad'])
+        if profesor_repetido.count() == 0:
+            return JsonResponse("El profesor no existe", safe=False)
         profesor = Profesor.objects.get(
             documento_identidad=profesor_data['documento_identidad'])
         profesor_serializer = ProfesorSerializer(
             profesor, data=profesor_data)
+
         if profesor_data['documento_identidad'] == profesor.documento_identidad and profesor_serializer.is_valid():
             profesor_serializer.save()
             return JsonResponse("Actualizado Correctamente", safe=False)
         return JsonResponse("Fallo al actualizar", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
     elif request.method == 'DELETE':
         profesores = Profesor.objects.all()
         if id not in [profesor.documento_identidad for profesor in profesores]:
