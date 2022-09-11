@@ -18,17 +18,21 @@ class Horario(models.Model):
 
     class Meta:
         abstract = True
+        app_label = 'gestor_cursos'
 
 
 class Curso(models.Model):
     id_curso = models.CharField(max_length=30, primary_key=True)
-    codigo_asignatura = models.CharField(max_length=30)
+    codigo_asignatura = models.IntegerField()
     grupo = models.SmallIntegerField()
     horarios = models.ArrayField(
         model_container=Horario
     )
     cupos_disponibles = models.SmallIntegerField()
     cupos_totales = models.SmallIntegerField()
+
+    class Meta:
+        app_label = 'gestor_cursos'
 
 # MODELO ASIGNATURA INSCRITA
 
@@ -37,6 +41,9 @@ class CursoInscrito(models.Model):
     id_curso = models.CharField(max_length=30)
     documento_estudiante = models.CharField(max_length=50)
 
+    class Meta:
+        app_label = 'gestor_cursos'
+
 # MODELO DE PROFESORES
 
 
@@ -44,3 +51,6 @@ class Profesor(models.Model):
     documento_identidad = models.CharField(max_length=50, primary_key=True)
     nombre_completo = models.CharField(max_length=100)
     email_institucional = models.EmailField()
+
+    class Meta:
+        app_label = 'gestor_cursos'

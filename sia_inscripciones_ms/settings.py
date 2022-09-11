@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'gestor_cursos.apps.GestorCursosConfig',
+    'asignaturas.apps.AsignaturasConfig',
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -82,9 +83,18 @@ WSGI_APPLICATION = 'sia_inscripciones_ms.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'sia_inscripciones_db',
+        'NAME': 'sia_GestorCursos_db',
+    },
+    'asignaturasdb': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sia_asignaturas_db',
+        'USER': 'root',
+        'PASSWORD': '123'
     }
 }
+
+DATABASE_ROUTERS = [
+    'sia_inscripciones_ms.routers.GestorCursosRouter.GestorCursosRouter', 'sia_inscripciones_ms.routers.AsignaturasRouter.AsignaturasRouter']
 
 
 # Password validation

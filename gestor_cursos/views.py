@@ -6,6 +6,7 @@ from rest_framework import status
 
 from gestor_cursos.models import Curso, CursoInscrito, Profesor
 from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, ProfesorSerializer
+from asignaturas.models import Asignatura, Prerequisito
 
 # Create your views here.
 
@@ -20,6 +21,13 @@ def cursoApi(request, id=0):
 
     elif request.method == 'POST':
         curso_data = JSONParser().parse(request)
+
+        # Valida que la asignatura exista
+        try:
+            asignatura = Asignatura.objects.get(
+                codigo_asignatura=curso_data['codigo_asignatura'])
+        except Asignatura.DoesNotExist:
+            return JsonResponse({'message': 'La asignatura no existe'}, status=status.HTTP_404_NOT_FOUND)
         # valida que el curso no exista
         cursos_repetidos = Curso.objects.filter(
             id_curso=curso_data['id_curso'])
@@ -60,10 +68,14 @@ def cursoInscritoApi(request, id=0):
     elif request.method == 'POST':
         curso_inscrito_data = JSONParser().parse(request)
         asignaturas_cursadas = curso_inscrito_data['asignaturas_cursadas']
+
+        cursos_inscritos = CursoInscrito.objects.filter(
+            documento_estudiante=curso_inscrito_data['documento_estudiante'])
+
         # valida que no haya cursado la asignatura antes
         for asignatura in asignaturas_cursadas:
             cursos_repetidos = Curso.objects.filter(
-                codigo_asignatura=asignatura)
+                codigo_asignatura=asignatura, id_curso=curso_inscrito_data['id_curso'])
             if cursos_repetidos.count() > 0:
                 return JsonResponse("El estudiante ya cursó la asignatura", safe=False)
 
@@ -74,8 +86,6 @@ def cursoInscritoApi(request, id=0):
             return JsonResponse("El curso ya está inscrito por el estudiante", safe=False)
 
         # Valida que el curso sea de una asignatura que el estudiante no haya ya inscrito
-        cursos_inscritos = CursoInscrito.objects.filter(
-            documento_estudiante=curso_inscrito_data['documento_estudiante'])
         cursos = Curso.objects.filter(
             id_curso__in=[curso_inscrito.id_curso for curso_inscrito in cursos_inscritos])
 
@@ -83,6 +93,45 @@ def cursoInscritoApi(request, id=0):
         curso = Curso.objects.get(id_curso=curso_inscrito_data['id_curso'])
         if curso.codigo_asignatura in asignaturas_inscritas:
             return JsonResponse("El estudiante ya está inscrito en una asignatura con el mismo código", safe=False)
+
+        # valida que cumpla el prerequisito o corequisito
+        prerequisitos = Prerequisito.objects.filter(
+            codigo_asignatura=curso.codigo_asignatura)
+        for prerequisito in prerequisitos:
+            if prerequisito.codigo_asignatura_prerequisito not in asignaturas_cursadas:
+                if prerequisito.es_correquisito == 1:
+                    if prerequisito.codigo_asignatura_prerequisito not in asignaturas_inscritas:
+                        return JsonResponse("El estudiante no cumple con el correquisito", safe=False)
+                    else:
+                        continue
+                return JsonResponse("El estudiante no cumple el prerequisito", safe=False)
+
+        # valida que el horario no se solape
+        solapado = False
+        for curso_inscrito in cursos_inscritos:
+            curso_temp = Curso.objects.get(
+                id_curso=curso_inscrito.id_curso)
+            for horario in curso_temp.horarios:
+                curso_nuevo = Curso.objects.get(
+                    id_curso=curso_inscrito_data['id_curso'])
+                for horario_nuevo in curso_nuevo.horarios:
+                    if horario_nuevo['dia'] == horario['dia']:
+                        if horario_nuevo['hora_inicio'] >= horario['hora_inicio'] and horario_nuevo['hora_inicio'] < horario['hora_fin']:
+                            print(1)
+                            solapado = True
+                            break
+                        if horario_nuevo['hora_fin'] > horario['hora_inicio'] and horario_nuevo['hora_fin'] <= horario['hora_fin']:
+                            print(2)
+
+                            solapado = True
+                            break
+                        if horario_nuevo['hora_inicio'] <= horario['hora_inicio'] and horario_nuevo['hora_fin'] >= horario['hora_fin']:
+                            print(3)
+
+                            solapado = True
+                            break
+        if solapado:
+            return JsonResponse("El horario se solapa con otro curso", safe=False)
 
         # Valida que el curso tenga cupos disponibles
         if curso.cupos_disponibles <= 0:
