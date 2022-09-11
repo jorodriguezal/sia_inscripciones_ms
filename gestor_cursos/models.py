@@ -30,14 +30,6 @@ class Curso(models.Model):
     cupos_disponibles = models.SmallIntegerField()
     cupos_totales = models.SmallIntegerField()
 
-# MODELO DE ESTUDIANTES
-
-
-class Estudiante(models.Model):
-    documento_identidad = models.CharField(max_length=50, primary_key=True)
-    nombre_completo = models.CharField(max_length=100)
-    email_institucional = models.EmailField()
-
 # MODELO ASIGNATURA INSCRITA
 
 

@@ -3,8 +3,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 
-from gestor_cursos.models import Curso, Estudiante, Profesor
-from gestor_cursos.serializers import CursoSerializer, EstudianteSerializer, ProfesorSerializer
+from gestor_cursos.models import Curso, CursoInscrito, Profesor
+from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, ProfesorSerializer
 
 # Create your views here.
 
@@ -37,32 +37,33 @@ def cursoApi(request, id=0):
 
 
 @csrf_exempt
-def estudianteApi(request, id=0):
+def cursoInscritoApi(request, id=0):
     if request.method == 'GET':
-        estudiantes = Estudiante.objects.all()
-        estudiantes_serializer = EstudianteSerializer(estudiantes, many=True)
-        return JsonResponse(estudiantes_serializer.data, safe=False)
+        cursos_inscritos = CursoInscrito.objects.all()
+        cursos_inscritos_serializer = CursoInscritoSerializer(
+            cursos_inscritos, many=True)
+        return JsonResponse(cursos_inscritos_serializer.data, safe=False)
     elif request.method == 'POST':
-        estudiante_data = JSONParser().parse(request)
-        estudiante_serializer = EstudianteSerializer(data=estudiante_data)
-        if estudiante_serializer.is_valid():
-            estudiante_serializer.save()
+        curso_inscrito_data = JSONParser().parse(request)
+        curso_inscrito_serializer = CursoInscritoSerializer(
+            data=curso_inscrito_data)
+        if curso_inscrito_serializer.is_valid():
+            curso_inscrito_serializer.save()
             return JsonResponse("Agregado Correctamente", safe=False)
         return JsonResponse("Fallo al agregar", safe=False)
     elif request.method == 'PUT':
-        estudiante_data = JSONParser().parse(request)
-        estudiante = Estudiante.objects.get(
-            documento_identidad=estudiante_data['documento_identidad'])
-        estudiante_serializer = EstudianteSerializer(
-            estudiante, data=estudiante_data)
-        if estudiante_serializer.is_valid():
-            estudiante_serializer.save()
+        curso_inscrito_data = JSONParser().parse(request)
+        curso_inscrito = CursoInscrito.objects.get(
+            id_curso_inscrito=curso_inscrito_data['id_curso_inscrito'])
+        curso_inscrito_serializer = CursoInscritoSerializer(
+            curso_inscrito, data=curso_inscrito_data)
+        if curso_inscrito_serializer.is_valid():
+            curso_inscrito_serializer.save()
             return JsonResponse("Actualizado Correctamente", safe=False)
         return JsonResponse("Fallo al actualizar", safe=False)
     elif request.method == 'DELETE':
-        estudiante = Estudiante.objects.get(
-            documento_identidad=id)
-        estudiante.delete()
+        curso_inscrito = CursoInscrito.objects.get(id_curso_inscrito=id)
+        curso_inscrito.delete()
         return JsonResponse("Eliminado Correctamente", safe=False)
 
 
