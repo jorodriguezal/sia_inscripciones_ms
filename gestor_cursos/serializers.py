@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from gestor_cursos.models import Curso, Estudiante, Profesor
+from gestor_cursos.models import Curso, Estudiante, Profesor, CursoInscrito
 
 
 class CursoSerializer(serializers.ModelSerializer):
@@ -11,6 +11,12 @@ class CursoSerializer(serializers.ModelSerializer):
 class EstudianteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Estudiante
+        fields = '__all__'
+
+
+class CursoInscritoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CursoInscrito
         fields = '__all__'
 
 

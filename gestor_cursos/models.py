@@ -21,7 +21,7 @@ class Horario(models.Model):
 
 
 class Curso(models.Model):
-    id_curso = models.AutoField(primary_key=True)
+    id_curso = models.CharField(max_length=30, primary_key=True)
     codigo_asignatura = models.CharField(max_length=30)
     grupo = models.SmallIntegerField()
     horarios = models.ArrayField(
@@ -37,6 +37,13 @@ class Estudiante(models.Model):
     documento_identidad = models.CharField(max_length=50, primary_key=True)
     nombre_completo = models.CharField(max_length=100)
     email_institucional = models.EmailField()
+
+# MODELO ASIGNATURA INSCRITA
+
+
+class CursoInscrito(models.Model):
+    id_curso = models.CharField(max_length=30)
+    documento_estudiante = models.CharField(max_length=50)
 
 # MODELO DE PROFESORES
 
