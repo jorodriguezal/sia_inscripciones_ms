@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
+from rest_framework import status
 
 from gestor_cursos.models import Curso, CursoInscrito, Profesor
 from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, ProfesorSerializer
@@ -74,23 +75,34 @@ def profesorApi(request, id=0):
         profesores_serializer = ProfesorSerializer(profesores, many=True)
         return JsonResponse(profesores_serializer.data, safe=False)
     elif request.method == 'POST':
+        profesores = Profesor.objects.all()
         profesor_data = JSONParser().parse(request)
         profesor_serializer = ProfesorSerializer(data=profesor_data)
-        if profesor_serializer.is_valid():
+
+        # Valida que el profesor no exista
+        profesor_repetido = profesor_data['documento_identidad'] in [
+            profesor.documento_identidad for profesor in profesores]
+        if profesor_repetido == False and profesor_serializer.is_valid():
             profesor_serializer.save()
             return JsonResponse("Agregado Correctamente", safe=False)
-        return JsonResponse("Fallo al agregar", safe=False)
+        return JsonResponse("Fallo al agregar: Información inválida o profesor ya existente", safe=False, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == 'PUT':
+        profesores = Profesor.objects.all()
         profesor_data = JSONParser().parse(request)
+        if profesor_data['documento_identidad'] not in [profesor.documento_identidad for profesor in profesores]:
+            return JsonResponse("El profesor no existe", safe=False, status=status.HTTP_404_NOT_FOUND)
         profesor = Profesor.objects.get(
             documento_identidad=profesor_data['documento_identidad'])
         profesor_serializer = ProfesorSerializer(
             profesor, data=profesor_data)
-        if profesor_serializer.is_valid():
+        if profesor_data['documento_identidad'] == profesor.documento_identidad and profesor_serializer.is_valid():
             profesor_serializer.save()
             return JsonResponse("Actualizado Correctamente", safe=False)
-        return JsonResponse("Fallo al actualizar", safe=False)
+        return JsonResponse("Fallo al actualizar", safe=False, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == 'DELETE':
+        profesores = Profesor.objects.all()
+        if id not in [profesor.documento_identidad for profesor in profesores]:
+            return JsonResponse("El profesor no existe", safe=False, status=status.HTTP_404_NOT_FOUND)
         profesor = Profesor.objects.get(
             documento_identidad=id)
         profesor.delete()
