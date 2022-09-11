@@ -37,12 +37,11 @@ class Estudiante(models.Model):
     documento_identidad = models.CharField(max_length=50, primary_key=True)
     nombre_completo = models.CharField(max_length=100)
     email_institucional = models.EmailField()
-    asignaturas_cursadas = models.ArrayField(
 
 # MODELO DE PROFESORES
 
 
 class Profesor(models.Model):
-    documento_identidad=models.CharField(max_length=50, primary_key=True)
-    nombre_completo=models.CharField(max_length=100)
-    email_institucional=models.EmailField()
+    documento_identidad = models.CharField(max_length=50, primary_key=True)
+    nombre_completo = models.CharField(max_length=100)
+    email_institucional = models.EmailField()
