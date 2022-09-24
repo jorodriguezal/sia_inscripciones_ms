@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -84,12 +85,18 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'sia_GestorCursos_db',
+        'CLIENT': {
+            'host': os.environ.get('DB_HOST')
+        }
+
     },
     'asignaturasdb': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sia_asignaturas_db',
-        'USER': 'root',
-        'PASSWORD': '123'
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
 
