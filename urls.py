@@ -20,5 +20,4 @@ from django.urls import include, re_path
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^', include('gestor_cursos.urls')),
-    re_path(r'^', include('asignaturas.urls')),
 ]

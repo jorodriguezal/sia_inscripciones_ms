@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'gestor_cursos.apps.GestorCursosConfig',
-    'asignaturas.apps.AsignaturasConfig',
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -86,17 +85,10 @@ DATABASES = {
         'ENGINE': 'djongo',
         'NAME': 'sia_GestorCursos_db',
         'CLIENT': {
-            'host': os.environ.get('DB_HOST')
+            # 'host': os.environ.get('DB_HOST')
+            'host': 'localhost'
         }
 
-    },
-    'asignaturasdb': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
     }
 }
 
