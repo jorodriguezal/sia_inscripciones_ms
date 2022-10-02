@@ -10,6 +10,84 @@ from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, 
 # Create your views here.
 
 
+def inscribir_curso(request):
+    curso_inscrito_data = JSONParser().parse(request)
+    print(curso_inscrito_data)
+
+    cursos_inscritos = CursoInscrito.objects.filter(
+        documento_estudiante=curso_inscrito_data['documento_estudiante'])
+
+    # valida que el curso no esté inscrito por el mismo estudiante
+    cursos_inscritos_repetidos = CursoInscrito.objects.filter(
+        id_curso=curso_inscrito_data['id_curso'], documento_estudiante=curso_inscrito_data['documento_estudiante'])
+    if cursos_inscritos_repetidos.count() > 0:
+        return JsonResponse("Curso ya inscrito", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
+    # Valida que el curso sea de una asignatura que el estudiante no haya ya inscrito
+    cursos = Curso.objects.filter(
+        id_curso__in=[curso_inscrito.id_curso for curso_inscrito in cursos_inscritos])
+
+    asignaturas_inscritas = [curso.codigo_asignatura for curso in cursos]
+    curso = Curso.objects.get(id_curso=curso_inscrito_data['id_curso'])
+    if curso.codigo_asignatura in asignaturas_inscritas:
+        return JsonResponse("Asignatura ya inscrita", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
+        # valida que cumpla el prerequisito o corequisito
+        '''
+        prerequisitos = Prerequisito.objects.filter(
+            codigo_asignatura=curso.codigo_asignatura)
+        for prerequisito in prerequisitos:
+            if prerequisito.codigo_asignatura_prerequisito not in asignaturas_cursadas:
+                if prerequisito.es_correquisito == 1:
+                    if prerequisito.codigo_asignatura_prerequisito not in asignaturas_inscritas:
+                        return JsonResponse("El estudiante no cumple con el correquisito", safe=False)
+                    else:
+                        continue
+                return JsonResponse("El estudiante no cumple el prerequisito", safe=False)
+        '''
+        # valida que el horario no se solape
+    solapado = False
+    for curso_inscrito in cursos_inscritos:
+        curso_temp = Curso.objects.get(
+            id_curso=curso_inscrito.id_curso)
+        for horario in curso_temp.horarios:
+            curso_nuevo = Curso.objects.get(
+                id_curso=curso_inscrito_data['id_curso'])
+            for horario_nuevo in curso_nuevo.horarios:
+                if horario_nuevo['dia'] == horario['dia']:
+                    if horario_nuevo['hora_inicio'] >= horario['hora_inicio'] and horario_nuevo['hora_inicio'] < horario['hora_fin']:
+                        print(1)
+                        solapado = True
+                        break
+                    if horario_nuevo['hora_fin'] > horario['hora_inicio'] and horario_nuevo['hora_fin'] <= horario['hora_fin']:
+                        print(2)
+
+                        solapado = True
+                        break
+                    if horario_nuevo['hora_inicio'] <= horario['hora_inicio'] and horario_nuevo['hora_fin'] >= horario['hora_fin']:
+                        print(3)
+
+                        solapado = True
+                        break
+    if solapado:
+        return JsonResponse("El horario se solapa con otro curso", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
+        # Valida que el curso tenga cupos disponibles
+    if curso.cupos_disponibles <= 0:
+        return JsonResponse("El curso no tiene cupos disponibles", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
+    curso_inscrito_serializer = CursoInscritoSerializer(
+        data=curso_inscrito_data)
+
+    if curso_inscrito_serializer.is_valid():
+        curso_inscrito_serializer.save()
+        # Actualiza los cupos disponibles del curso
+        curso.cupos_disponibles -= 1
+        curso.save()
+        return JsonResponse("Agregado Correctamente", safe=False)
+    return JsonResponse("Fallo al agregar", safe=False, status=status.HTTP_400_BAD_REQUEST)
+
+
 @csrf_exempt
 def cursoApi(request, id=0):
 
@@ -58,80 +136,7 @@ def cursoInscritoApi(request, id=0):
         return JsonResponse(cursos_inscritos_serializer.data, safe=False)
 
     elif request.method == 'POST':
-        curso_inscrito_data = JSONParser().parse(request)
-
-        cursos_inscritos = CursoInscrito.objects.filter(
-            documento_estudiante=curso_inscrito_data['documento_estudiante'])
-
-        # valida que el curso no esté inscrito por el mismo estudiante
-        cursos_inscritos_repetidos = CursoInscrito.objects.filter(
-            id_curso=curso_inscrito_data['id_curso'], documento_estudiante=curso_inscrito_data['documento_estudiante'])
-        if cursos_inscritos_repetidos.count() > 0:
-            return JsonResponse("El curso ya está inscrito por el estudiante", safe=False, status=status.HTTP_400_BAD_REQUEST)
-
-        # Valida que el curso sea de una asignatura que el estudiante no haya ya inscrito
-        cursos = Curso.objects.filter(
-            id_curso__in=[curso_inscrito.id_curso for curso_inscrito in cursos_inscritos])
-
-        asignaturas_inscritas = [curso.codigo_asignatura for curso in cursos]
-        curso = Curso.objects.get(id_curso=curso_inscrito_data['id_curso'])
-        if curso.codigo_asignatura in asignaturas_inscritas:
-            return JsonResponse("El estudiante ya está inscrito en una asignatura con el mismo código", safe=False, status=status.HTTP_400_BAD_REQUEST)
-
-        # valida que cumpla el prerequisito o corequisito
-        '''
-        prerequisitos = Prerequisito.objects.filter(
-            codigo_asignatura=curso.codigo_asignatura)
-        for prerequisito in prerequisitos:
-            if prerequisito.codigo_asignatura_prerequisito not in asignaturas_cursadas:
-                if prerequisito.es_correquisito == 1:
-                    if prerequisito.codigo_asignatura_prerequisito not in asignaturas_inscritas:
-                        return JsonResponse("El estudiante no cumple con el correquisito", safe=False)
-                    else:
-                        continue
-                return JsonResponse("El estudiante no cumple el prerequisito", safe=False)
-        '''
-        # valida que el horario no se solape
-        solapado = False
-        for curso_inscrito in cursos_inscritos:
-            curso_temp = Curso.objects.get(
-                id_curso=curso_inscrito.id_curso)
-            for horario in curso_temp.horarios:
-                curso_nuevo = Curso.objects.get(
-                    id_curso=curso_inscrito_data['id_curso'])
-                for horario_nuevo in curso_nuevo.horarios:
-                    if horario_nuevo['dia'] == horario['dia']:
-                        if horario_nuevo['hora_inicio'] >= horario['hora_inicio'] and horario_nuevo['hora_inicio'] < horario['hora_fin']:
-                            print(1)
-                            solapado = True
-                            break
-                        if horario_nuevo['hora_fin'] > horario['hora_inicio'] and horario_nuevo['hora_fin'] <= horario['hora_fin']:
-                            print(2)
-
-                            solapado = True
-                            break
-                        if horario_nuevo['hora_inicio'] <= horario['hora_inicio'] and horario_nuevo['hora_fin'] >= horario['hora_fin']:
-                            print(3)
-
-                            solapado = True
-                            break
-        if solapado:
-            return JsonResponse("El horario se solapa con otro curso", safe=False, status=status.HTTP_400_BAD_REQUEST)
-
-        # Valida que el curso tenga cupos disponibles
-        if curso.cupos_disponibles <= 0:
-            return JsonResponse("El curso no tiene cupos disponibles", safe=False, status=status.HTTP_400_BAD_REQUEST)
-
-        curso_inscrito_serializer = CursoInscritoSerializer(
-            data=curso_inscrito_data)
-
-        if curso_inscrito_serializer.is_valid():
-            curso_inscrito_serializer.save()
-            # Actualiza los cupos disponibles del curso
-            curso.cupos_disponibles -= 1
-            curso.save()
-            return JsonResponse("Agregado Correctamente", safe=False)
-        return JsonResponse("Fallo al agregar", safe=False, status=status.HTTP_400_BAD_REQUEST)
+        return inscribir_curso(request)
 
     elif request.method == 'DELETE':
         curso_inscrito = CursoInscrito.objects.get(id_curso_inscrito=id)
