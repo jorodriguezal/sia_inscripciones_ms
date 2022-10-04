@@ -85,7 +85,7 @@ DATABASES = {
         'NAME': 'sia_GestorCursos_db',
         'CLIENT': {
             # 'host': os.environ.get('DB_HOST')
-            'host': 'host.docker.internal'
+            'host': 'localhost'
         }
 
     }

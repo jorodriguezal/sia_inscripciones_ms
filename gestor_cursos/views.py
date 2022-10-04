@@ -12,7 +12,11 @@ from gestor_cursos.serializers import CursoSerializer, CursoInscritoSerializer, 
 
 def inscribir_curso(request):
     curso_inscrito_data = JSONParser().parse(request)
-    print(curso_inscrito_data)
+    # valida que el curso exista
+    try:
+        curso = Curso.objects.get(id_curso=curso_inscrito_data['id_curso'])
+    except Curso.DoesNotExist:
+        return JsonResponse("El curso no existe", safe=False, status=status.HTTP_400_BAD_REQUEST)
 
     cursos_inscritos = CursoInscrito.objects.filter(
         documento_estudiante=curso_inscrito_data['documento_estudiante'])
