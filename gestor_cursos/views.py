@@ -96,6 +96,14 @@ def inscribir_curso(request):
 def cursoApi(request, id=0):
 
     if request.method == 'GET':
+        # obtener según el id
+        if id != 0:
+            try:
+                curso = Curso.objects.get(id_curso=id)
+                curso_serializer = CursoSerializer(curso)
+                return JsonResponse(curso_serializer.data, safe=False)
+            except Curso.DoesNotExist:
+                return JsonResponse({"id_curso": None}, safe=False, status=status.HTTP_400_BAD_REQUEST)
         cursos = Curso.objects.all()
         cursos_serializer = CursoSerializer(cursos, many=True)
         return JsonResponse(cursos_serializer.data, safe=False)
@@ -134,7 +142,12 @@ def cursoApi(request, id=0):
 def cursoInscritoApi(request, id=0):
 
     if request.method == 'GET':
-        cursos_inscritos = CursoInscrito.objects.all()
+        # gets the id argument from the url if it has one
+        if id != 0:
+            cursos_inscritos = CursoInscrito.objects.filter(
+                id_curso=id)
+        else:
+            cursos_inscritos = CursoInscrito.objects.all()
         cursos_inscritos_serializer = CursoInscritoSerializer(
             cursos_inscritos, many=True)
         return JsonResponse(cursos_inscritos_serializer.data, safe=False)
