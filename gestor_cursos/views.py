@@ -96,14 +96,15 @@ def inscribir_curso(request):
 def cursoApi(request, id=0):
 
     if request.method == 'GET':
-        # obtener según el id
+        # obtener según el id de la asignatura
         if id != 0:
             try:
-                curso = Curso.objects.get(id_curso=id)
-                curso_serializer = CursoSerializer(curso)
-                return JsonResponse(curso_serializer.data, safe=False)
+                cursos = Curso.objects.filter(
+                    codigo_asignatura=id)
+                cursos_serializer = CursoSerializer(cursos, many=True)
+                return JsonResponse(cursos_serializer.data, safe=False)
             except Curso.DoesNotExist:
-                return JsonResponse({"id_curso": None}, safe=False, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse("La asignatura no tiene ningún curso asociado", safe=False, status=status.HTTP_404_BAD_REQUEST)
         cursos = Curso.objects.all()
         cursos_serializer = CursoSerializer(cursos, many=True)
         return JsonResponse(cursos_serializer.data, safe=False)
@@ -139,13 +140,13 @@ def cursoApi(request, id=0):
 
 
 @csrf_exempt
-def cursoInscritoApi(request, id=0):
+def cursoInscritoApi(request, id=None):
 
     if request.method == 'GET':
         # gets the id argument from the url if it has one
-        if id != 0:
+        if id != None:
             cursos_inscritos = CursoInscrito.objects.filter(
-                id_curso=id)
+                documento_estudiante=id)
         else:
             cursos_inscritos = CursoInscrito.objects.all()
         cursos_inscritos_serializer = CursoInscritoSerializer(
@@ -162,9 +163,18 @@ def cursoInscritoApi(request, id=0):
 
 
 @csrf_exempt
-def profesorApi(request, id=0):
+def profesorApi(request, id=None):
 
     if request.method == 'GET':
+        # gets the id argument from the url if it has one
+        if id != None:
+            try:
+                profesor = Profesor.objects.get(documento_identidad=id)
+                profesor_serializer = ProfesorSerializer(profesor)
+                return JsonResponse(profesor_serializer.data, safe=False)
+            except Profesor.DoesNotExist:
+                return JsonResponse("No existe el profesor", safe=False, status=status.HTTP_404_NOT_FOUND)
+
         profesores = Profesor.objects.all()
         profesores_serializer = ProfesorSerializer(profesores, many=True)
         return JsonResponse(profesores_serializer.data, safe=False)
