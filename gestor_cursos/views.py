@@ -146,7 +146,7 @@ def cursoInscritoApi(request, id=None):
         # gets the id argument from the url if it has one
         if id != None:
             cursos_inscritos = CursoInscrito.objects.filter(
-                documento_estudiante=id)
+                id_curso=id)
         else:
             cursos_inscritos = CursoInscrito.objects.all()
         cursos_inscritos_serializer = CursoInscritoSerializer(
@@ -219,3 +219,16 @@ def profesorApi(request, id=None):
             documento_identidad=id)
         profesor.delete()
         return JsonResponse("Eliminado Correctamente", safe=False)
+
+
+@csrf_exempt
+def horarioApi(request, id):
+    # devuelve los cursos de un estudiante
+    if request.method == 'GET':
+        cursos_inscritos = CursoInscrito.objects.filter(
+            documento_estudiante=id)
+        # devuelve los cursos con id de los cursos inscritos
+        cursos = Curso.objects.filter(
+            id_curso__in=[curso.id_curso for curso in cursos_inscritos])
+        cursos_serializer = CursoSerializer(cursos, many=True)
+        return JsonResponse(cursos_serializer.data, safe=False)

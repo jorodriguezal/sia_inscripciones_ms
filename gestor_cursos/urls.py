@@ -9,4 +9,6 @@ urlpatterns = [
     re_path(r'^profesor$', views.profesorApi),
     # ruta con argumento alfanumérico para el id del profesor
     re_path(r'^profesor/([a-zA-Z0-9]+)$', views.profesorApi),
+    # ruta con argumento para el horario del estudiante
+    re_path(r'^horario/([a-zA-Z0-9]+)$', views.horarioApi),
 ]
