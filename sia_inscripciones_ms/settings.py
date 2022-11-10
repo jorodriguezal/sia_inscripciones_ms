@@ -85,7 +85,8 @@ DATABASES = {
         'NAME': 'sia_GestorCursos_db',
         'CLIENT': {
             # 'host': os.environ.get('DB_HOST')
-            'host': 'host.docker.internal'
+            # 'host': 'host.docker.internal'
+            'host': 'mongodb+srv://sia_user2022:sia_db_archisoft_2E@sia.ylyd43y.mongodb.net/test'
         }
 
     }
